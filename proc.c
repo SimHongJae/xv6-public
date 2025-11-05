@@ -15,6 +15,12 @@ struct {
 static struct proc *initproc;
 
 int nextpid = 1;
+
+struct spinlock genustable_lock;
+int genustable_total_capacity = 0;
+int genustable_next_genusid = 1;
+int genustable_MAX_TOTAL_CAPACITY = 90;
+
 extern void forkret(void);
 extern void trapret(void);
 
@@ -24,6 +30,7 @@ void
 pinit(void)
 {
   initlock(&ptable.lock, "ptable");
+  initlock(&genustable_lock, "genustable");  // genus 락 초기화
 }
 
 // Must be called with interrupts disabled
@@ -88,6 +95,8 @@ allocproc(void)
 found:
   p->state = EMBRYO;
   p->pid = nextpid++;
+  p->genus = 0;               // Initialize genus to 0
+  p->capacity = 0;            // Initialize capacity to 0
 
   release(&ptable.lock);
 
@@ -199,6 +208,9 @@ fork(void)
   np->sz = curproc->sz;
   np->parent = curproc;
   *np->tf = *curproc->tf;
+
+  np->genus = curproc->genus;         // Copy genus from parent
+  np->capacity = curproc->capacity;   // Copy capacity from parent
 
   // Clear %eax so that fork returns 0 in the child.
   np->tf->eax = 0;
