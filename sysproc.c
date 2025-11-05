@@ -102,7 +102,7 @@ int sys_add(void)
 }
 
 
-int sys_setgenus(int capacity)
+int sys_setgenus(void)
 {
   
   int capacity;
