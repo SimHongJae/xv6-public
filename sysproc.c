@@ -122,9 +122,10 @@ int sys_setgenus(void)
     release(&genustable_lock);
     return -1;
   }
-    
-  curproc->genus = genustable_next_genusid++;  
+
+  curproc->genus = genustable_next_genusid++;
   curproc->capacity = capacity;
+  curproc->is_genus_owner = 1;  // Mark as owner since this process called setgenus
   genustable_total_capacity += capacity;
 
   int assigned_id = curproc->genus;

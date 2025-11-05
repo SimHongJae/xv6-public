@@ -93,6 +93,16 @@ exec(char *path, char **argv)
       last = s+1;
   safestrcpy(curproc->name, last, sizeof(curproc->name));
 
+  // Reset genus when executing new program
+  if(curproc->genus != 0 && curproc->is_genus_owner) {
+    acquire(&genustable_lock);
+    genustable_total_capacity -= curproc->capacity;
+    release(&genustable_lock);
+  }
+  curproc->genus = 0;
+  curproc->capacity = 0;
+  curproc->is_genus_owner = 0;
+
   // Commit to the user image.
   oldpgdir = curproc->pgdir;
   curproc->pgdir = pgdir;
