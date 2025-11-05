@@ -89,3 +89,15 @@ sys_uptime(void)
   release(&tickslock);
   return xticks;
 }
+
+int
+sys_add(void)
+{
+  int a, b;
+  if(argint(0, &a) < 0)
+    return -1;
+
+  if(argint(1, &b) < 0)
+    return -1;
+  return a + b;
+}
