@@ -89,3 +89,60 @@ sys_uptime(void)
   release(&tickslock);
   return xticks;
 }
+
+int sys_add(void)
+{
+  int a, b;
+  if(argint(0, &a) < 0)
+    return -1;
+
+  if(argint(1, &b) < 0)
+    return -1;
+  return a + b;
+}
+
+
+int sys_setgenus(void)
+{
+  
+  int capacity;
+  struct proc *curproc = myproc();
+  if(argint(0, &capacity) < 0)
+    return -1;
+
+  if(curproc->genus != 0)
+    return -1;
+
+  if(capacity <= 0)
+    return -1;
+
+  acquire(&genustable_lock);
+
+  if(genustable_total_capacity + capacity > genustable_MAX_TOTAL_CAPACITY){
+    release(&genustable_lock);
+    return -1;
+  }
+
+  curproc->genus = genustable_next_genusid++;
+  curproc->capacity = capacity;
+  curproc->is_genus_owner = 1;  // Mark as owner since this process called setgenus
+  genustable_total_capacity += capacity;
+
+  int assigned_id = curproc->genus;
+
+  release(&genustable_lock);
+  return assigned_id;
+}
+
+int sys_getgenus(void)
+{
+  if(myproc()->genus == 0)
+    return -1;
+  return myproc()->genus;
+}
+int sys_getcapacity(void)
+{
+  if(myproc()->genus == 0)
+    return -1;
+  return myproc()->capacity;
+}

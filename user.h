@@ -23,6 +23,11 @@ int getpid(void);
 char* sbrk(int);
 int sleep(int);
 int uptime(void);
+int add(int, int);  // newly added system call
+int setgenus(int); // newly added system call
+int getgenus(void); // newly added system call
+int getcapacity(void); // newly added system call
+
 
 // ulib.c
 int stat(const char*, struct stat*);

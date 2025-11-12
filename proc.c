@@ -15,6 +15,12 @@ struct {
 static struct proc *initproc;
 
 int nextpid = 1;
+
+struct spinlock genustable_lock;
+int genustable_total_capacity = 0;
+int genustable_next_genusid = 1;
+int genustable_MAX_TOTAL_CAPACITY = 90;
+
 extern void forkret(void);
 extern void trapret(void);
 
@@ -24,6 +30,7 @@ void
 pinit(void)
 {
   initlock(&ptable.lock, "ptable");
+  initlock(&genustable_lock, "genustable");  // genus 락 초기화
 }
 
 // Must be called with interrupts disabled
@@ -88,6 +95,9 @@ allocproc(void)
 found:
   p->state = EMBRYO;
   p->pid = nextpid++;
+  p->genus = 0;               // Initialize genus to 0
+  p->capacity = 0;            // Initialize capacity to 0
+  p->is_genus_owner = 0;      // Initialize as not owner
 
   release(&ptable.lock);
 
@@ -200,6 +210,10 @@ fork(void)
   np->parent = curproc;
   *np->tf = *curproc->tf;
 
+  np->genus = curproc->genus;         // Copy genus from parent
+  np->capacity = curproc->capacity;   // Copy capacity from parent
+  np->is_genus_owner = 0;             // Child inherits but is not owner
+
   // Clear %eax so that fork returns 0 in the child.
   np->tf->eax = 0;
 
@@ -247,6 +261,10 @@ exit(void)
   end_op();
   curproc->cwd = 0;
 
+  // NOTE: Do NOT release genus capacity here!
+  // Capacity should be held until wait() reaps the zombie.
+  // This ensures zombie processes still occupy capacity.
+
   acquire(&ptable.lock);
 
   // Parent might be sleeping in wait().
@@ -287,6 +305,16 @@ wait(void)
       if(p->state == ZOMBIE){
         // Found one.
         pid = p->pid;
+
+        // Release genus capacity if this process was the owner
+        if(p->genus != 0 && p->is_genus_owner) {
+          release(&ptable.lock);
+          acquire(&genustable_lock);
+          genustable_total_capacity -= p->capacity;
+          release(&genustable_lock);
+          acquire(&ptable.lock);
+        }
+
         kfree(p->kstack);
         p->kstack = 0;
         freevm(p->pgdir);
@@ -294,6 +322,9 @@ wait(void)
         p->parent = 0;
         p->name[0] = 0;
         p->killed = 0;
+        p->genus = 0;
+        p->capacity = 0;
+        p->is_genus_owner = 0;
         p->state = UNUSED;
         release(&ptable.lock);
         return pid;

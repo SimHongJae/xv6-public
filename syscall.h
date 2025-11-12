@@ -20,3 +20,7 @@
 #define SYS_link   19
 #define SYS_mkdir  20
 #define SYS_close  21
+#define SYS_add 22
+#define SYS_setgenus 23
+#define SYS_getgenus 24
+#define SYS_getcapacity 25

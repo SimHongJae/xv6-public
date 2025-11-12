@@ -120,6 +120,10 @@ void            userinit(void);
 int             wait(void);
 void            wakeup(void*);
 void            yield(void);
+extern struct spinlock genustable_lock;
+extern int genustable_total_capacity;
+extern int genustable_next_genusid;
+extern int genustable_MAX_TOTAL_CAPACITY;
 
 // swtch.S
 void            swtch(struct context**, struct context*);
